@@ -7,7 +7,6 @@ BUCKET_NAME="${BUCKET_NAME:-hitkeep-backups}"
 BUCKET_REGION="${BUCKET_REGION:-iad}"
 IMAGE="${IMAGE:-pascalebeier/hitkeep:2.7.0}"
 WORKSPACE="${RAILWAY_WORKSPACE:-}"
-HITKEEP_S3_ENDPOINT="${HITKEEP_S3_ENDPOINT:-storage.railway.app}"
 
 caller_env=(
   "RAILWAY_CALLER=${RAILWAY_CALLER:-hitkeep-railway-template-script}"
@@ -67,7 +66,7 @@ service_json="$(railway_cmd add --image "$IMAGE" --service "$SERVICE_NAME" --jso
   --variables "HITKEEP_S3_ACCESS_KEY_ID=$(bucket_ref ACCESS_KEY_ID)" \
   --variables "HITKEEP_S3_SECRET_ACCESS_KEY=$(bucket_ref SECRET_ACCESS_KEY)" \
   --variables "HITKEEP_S3_REGION=$(bucket_ref REGION)" \
-  --variables "HITKEEP_S3_ENDPOINT=$HITKEEP_S3_ENDPOINT" \
+  --variables "HITKEEP_S3_ENDPOINT=$(bucket_ref ENDPOINT)" \
   --variables "HITKEEP_S3_URL_STYLE=vhost" \
   --variables "HITKEEP_S3_USE_SSL=true" \
   --variables "HITKEEP_SPAM_FILTER_AUTO_UPDATE=true" \

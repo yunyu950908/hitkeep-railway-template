@@ -13,7 +13,7 @@ require_line() {
   local file="$1"
   local line="$2"
 
-  rg --fixed-strings --quiet "$line" "$file" || fail "missing expected line in $file: $line"
+  rg --fixed-strings --quiet -- "$line" "$file" || fail "missing expected line in $file: $line"
 }
 
 command -v jq >/dev/null 2>&1 || fail "jq is required"
@@ -28,12 +28,13 @@ require_line .env.example 'HITKEEP_BACKUP_PATH=s3://${{hitkeep-backups.BUCKET}}/
 require_line .env.example 'HITKEEP_S3_ACCESS_KEY_ID=${{hitkeep-backups.ACCESS_KEY_ID}}'
 require_line .env.example 'HITKEEP_S3_SECRET_ACCESS_KEY=${{hitkeep-backups.SECRET_ACCESS_KEY}}'
 require_line .env.example 'HITKEEP_S3_REGION=${{hitkeep-backups.REGION}}'
-require_line .env.example 'HITKEEP_S3_ENDPOINT=storage.railway.app'
+require_line .env.example 'HITKEEP_S3_ENDPOINT=${{hitkeep-backups.ENDPOINT}}'
 require_line .env.example 'HITKEEP_S3_URL_STYLE=vhost'
 require_line .env.example 'HITKEEP_S3_USE_SSL=true'
 
 require_line scripts/create-template-source-project.sh 'BUCKET_NAME="${BUCKET_NAME:-hitkeep-backups}"'
 require_line scripts/create-template-source-project.sh 'BUCKET_REGION="${BUCKET_REGION:-iad}"'
+require_line scripts/create-template-source-project.sh '--variables "HITKEEP_S3_ENDPOINT=$(bucket_ref ENDPOINT)" \'
 rg --quiet 'railway_cmd bucket create "\$BUCKET_NAME" --region "\$BUCKET_REGION" --json' scripts/create-template-source-project.sh \
   || fail "template source project script must create a Railway bucket"
 

@@ -43,7 +43,7 @@ The template provisions one Railway service from the official Docker image, one 
 | `HITKEEP_S3_ACCESS_KEY_ID` | `${{hitkeep-backups.ACCESS_KEY_ID}}` | Lets DuckDB write backup/archive Parquet files to the Railway Bucket. |
 | `HITKEEP_S3_SECRET_ACCESS_KEY` | `${{hitkeep-backups.SECRET_ACCESS_KEY}}` | Secret key for the Railway Bucket S3 API. |
 | `HITKEEP_S3_REGION` | `${{hitkeep-backups.REGION}}` | Region used when signing S3 requests. |
-| `HITKEEP_S3_ENDPOINT` | `storage.railway.app` | DuckDB S3 endpoint host for Railway Buckets. |
+| `HITKEEP_S3_ENDPOINT` | `${{hitkeep-backups.ENDPOINT}}` | Endpoint URL for the Railway Bucket S3 API. |
 | `HITKEEP_S3_URL_STYLE` | `vhost` | Matches current Railway Bucket virtual-hosted-style URLs. |
 | `HITKEEP_S3_USE_SSL` | `true` | Uses HTTPS for bucket writes. |
 
