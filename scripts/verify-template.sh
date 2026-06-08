@@ -33,7 +33,7 @@ require_line .env.example 'HITKEEP_S3_URL_STYLE=vhost'
 require_line .env.example 'HITKEEP_S3_USE_SSL=true'
 
 require_line scripts/create-template-source-project.sh 'BUCKET_NAME="${BUCKET_NAME:-hitkeep-backups}"'
-require_line scripts/create-template-source-project.sh 'BUCKET_REGION="${BUCKET_REGION:-iad}"'
+require_line scripts/create-template-source-project.sh 'BUCKET_REGION="${BUCKET_REGION:-sin}"'
 require_line scripts/create-template-source-project.sh 'HITKEEP_S3_ENDPOINT="${HITKEEP_S3_ENDPOINT:-t3.storageapi.dev}"'
 require_line scripts/create-template-source-project.sh '--variables "HITKEEP_S3_ENDPOINT=$HITKEEP_S3_ENDPOINT" \'
 require_line scripts/create-template-source-project.sh 'volume_json="$(railway_cmd volume --project "$project_id" --environment "$environment_id" --service "$service_id" add --mount-path /var/lib/hitkeep/data --json)"'
@@ -41,6 +41,24 @@ rg --quiet 'railway_cmd bucket create "\$BUCKET_NAME" --region "\$BUCKET_REGION"
   && fail "template source project script must create the Railway bucket with an explicit environment"
 rg --quiet 'railway_cmd bucket create "\$BUCKET_NAME" --region "\$BUCKET_REGION" --environment "\$environment_id" --json' scripts/create-template-source-project.sh \
   || fail "template source project script must create the Railway bucket with an explicit environment"
+
+for template_variable in \
+  PORT \
+  HITKEEP_HTTP_ADDR \
+  HITKEEP_DB_PATH \
+  HITKEEP_DATA_PATH \
+  RAILWAY_RUN_UID \
+  HITKEEP_S3_ENDPOINT \
+  HITKEEP_S3_URL_STYLE \
+  HITKEEP_S3_USE_SSL \
+  HITKEEP_BACKUP_INTERVAL \
+  HITKEEP_BACKUP_RETENTION \
+  HITKEEP_SPAM_FILTER_PATH \
+  HITKEEP_SPAM_FILTER_AUTO_UPDATE; do
+  require_line TEMPLATE_VARIABLES.md "| \`$template_variable\` |"
+done
+require_line TEMPLATE_VARIABLES.md '| `HITKEEP_S3_ENDPOINT` | `t3.storageapi.dev` |'
+require_line README.md 'If Railway blocks publishing with "Missing variable details", fill the generated template variables with the defaults and descriptions in [TEMPLATE_VARIABLES.md](TEMPLATE_VARIABLES.md).'
 
 if rg --quiet 'HITKEEP_(BACKUP|ARCHIVE)_PATH=/var/lib/hitkeep/data/(backups|archive)' \
   .env.example scripts/create-template-source-project.sh; then

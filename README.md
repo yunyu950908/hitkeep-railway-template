@@ -76,6 +76,7 @@ Run the repository-level template validation before publishing template changes:
 ```
 
 This checks JSON syntax, shell syntax, required bucket-backed environment variables, source-project bucket creation, and documentation for the S3 retention caveat.
+If Railway blocks publishing with "Missing variable details", fill the generated template variables with the defaults and descriptions in [TEMPLATE_VARIABLES.md](TEMPLATE_VARIABLES.md).
 
 ## Recreate The Template Source Project
 

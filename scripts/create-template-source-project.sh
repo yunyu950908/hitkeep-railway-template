@@ -4,7 +4,7 @@ set -euo pipefail
 PROJECT_NAME="${PROJECT_NAME:-hitkeep-railway-template}"
 SERVICE_NAME="${SERVICE_NAME:-hitkeep}"
 BUCKET_NAME="${BUCKET_NAME:-hitkeep-backups}"
-BUCKET_REGION="${BUCKET_REGION:-iad}"
+BUCKET_REGION="${BUCKET_REGION:-sin}"
 IMAGE="${IMAGE:-pascalebeier/hitkeep:2.7.0}"
 WORKSPACE="${RAILWAY_WORKSPACE:-}"
 HITKEEP_S3_ENDPOINT="${HITKEEP_S3_ENDPOINT:-t3.storageapi.dev}"
