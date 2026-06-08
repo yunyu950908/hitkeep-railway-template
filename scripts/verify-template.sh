@@ -24,7 +24,8 @@ jq -e '
   .templateId == "56a81d26-7495-46da-8189-5204b0404562" and
   .templateCode == "hitkeep-bucket-template" and
   .templateUrl == "https://railway.com/deploy/hitkeep-bucket-template" and
-  .templateStatus == "PUBLISHED"
+  .templateStatus == "PUBLISHED" and
+  .bucketRegion == "sjc"
 ' railway-template.json >/dev/null || fail "railway-template.json must describe the published hitkeep-bucket-template"
 bash -n scripts/create-template-source-project.sh
 bash -n scripts/verify-template.sh
@@ -47,7 +48,7 @@ require_line .env.example 'HITKEEP_SPAM_FILTER_PATH=/var/lib/hitkeep/data/spam-f
 
 require_line scripts/create-template-source-project.sh 'PROJECT_NAME="${PROJECT_NAME:-hitkeep-bucket-template}"'
 require_line scripts/create-template-source-project.sh 'BUCKET_NAME="${BUCKET_NAME:-hitkeep-backups}"'
-require_line scripts/create-template-source-project.sh 'BUCKET_REGION="${BUCKET_REGION:-}"'
+require_line scripts/create-template-source-project.sh 'BUCKET_REGION="${BUCKET_REGION:-sjc}"'
 require_line scripts/create-template-source-project.sh 'HITKEEP_S3_ENDPOINT="${HITKEEP_S3_ENDPOINT:-t3.storageapi.dev}"'
 require_line scripts/create-template-source-project.sh '  --variables '\''HITKEEP_PUBLIC_URL=https://${{RAILWAY_PUBLIC_DOMAIN}}'\'' \'
 require_line scripts/create-template-source-project.sh '  --variables "HITKEEP_HTTP_ADDR=:8080" \'
@@ -55,14 +56,11 @@ require_line scripts/create-template-source-project.sh '  --variables "HITKEEP_D
 require_line scripts/create-template-source-project.sh '  --variables "HITKEEP_DATA_PATH=/var/lib/hitkeep/data" \'
 require_line scripts/create-template-source-project.sh '--variables "HITKEEP_S3_ENDPOINT=$HITKEEP_S3_ENDPOINT" \'
 require_line scripts/create-template-source-project.sh 'volume_json="$(railway_cmd volume --project "$project_id" --environment "$environment_id" --service "$service_id" add --mount-path /var/lib/hitkeep/data --json)"'
-require_line scripts/create-template-source-project.sh 'bucket_create_args=(bucket create "$BUCKET_NAME" --environment "$environment_id" --json)'
-require_line scripts/create-template-source-project.sh 'bucket_create_args+=(--region "$BUCKET_REGION")'
+require_line scripts/create-template-source-project.sh 'bucket_create_args=(bucket create "$BUCKET_NAME" --environment "$environment_id" --region "$BUCKET_REGION" --json)'
 require_line scripts/create-template-source-project.sh 'bucket_json="$(railway_cmd "${bucket_create_args[@]}")"'
-rg --quiet 'BUCKET_REGION="\$\{BUCKET_REGION:-[a-z]' scripts/create-template-source-project.sh \
-  && fail "template source project script must not hard-code a bucket region by default"
 rg --quiet 'railway_cmd bucket create' scripts/create-template-source-project.sh \
-  && fail "template source project script must build bucket create args so region remains optional"
-rg --quiet 'bucket create "\$BUCKET_NAME" --environment "\$environment_id" --json' scripts/create-template-source-project.sh \
+  && fail "template source project script must build bucket create args with an explicit region"
+rg --quiet 'bucket create "\$BUCKET_NAME" --environment "\$environment_id" --region "\$BUCKET_REGION" --json' scripts/create-template-source-project.sh \
   || fail "template source project script must create the Railway bucket with an explicit environment"
 
 for template_variable in \
@@ -88,7 +86,9 @@ for template_variable in \
   require_line TEMPLATE_VARIABLES.md "| \`$template_variable\` |"
 done
 require_line TEMPLATE_VARIABLES.md '| `HITKEEP_S3_ENDPOINT` | `t3.storageapi.dev` |'
+require_line TEMPLATE_VARIABLES.md 'do not use `${{hitkeep-backups.ENDPOINT}}` directly'
 require_line README.md 'If Railway blocks publishing with "Missing variable details", fill the generated template variables with the defaults and descriptions in [TEMPLATE_VARIABLES.md](TEMPLATE_VARIABLES.md).'
+require_line README.md 'Do not set it to `${{hitkeep-backups.ENDPOINT}}`; Railway resolves that reference to the full URL and DuckDB will build an invalid virtual-hosted S3 URL.'
 
 if rg --quiet 'HITKEEP_(BACKUP|ARCHIVE)_PATH=/var/lib/hitkeep/data/(backups|archive)' \
   .env.example scripts/create-template-source-project.sh; then

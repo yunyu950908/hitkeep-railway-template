@@ -45,7 +45,7 @@ The published `hitkeep` service currently has 19 pre-configured variables in the
 | `HITKEEP_S3_ACCESS_KEY_ID` | `${{hitkeep-backups.ACCESS_KEY_ID}}` | Lets DuckDB write backup/archive Parquet files to the Railway Bucket. |
 | `HITKEEP_S3_SECRET_ACCESS_KEY` | `${{hitkeep-backups.SECRET_ACCESS_KEY}}` | Secret key for the Railway Bucket S3 API. |
 | `HITKEEP_S3_REGION` | `${{hitkeep-backups.REGION}}` | Region used when signing S3 requests. |
-| `HITKEEP_S3_ENDPOINT` | `t3.storageapi.dev` | Host-only form of the Railway Bucket endpoint for DuckDB. Match the host from the bucket `ENDPOINT` credential if Railway shows a different endpoint. |
+| `HITKEEP_S3_ENDPOINT` | `t3.storageapi.dev` | Host-only form of the Railway Bucket endpoint for DuckDB. Match the host from the bucket `ENDPOINT` credential if Railway shows a different endpoint. Do not use `${{hitkeep-backups.ENDPOINT}}` directly because it includes `https://`. |
 | `HITKEEP_S3_URL_STYLE` | `vhost` | Matches current Railway Bucket virtual-hosted-style URLs. |
 | `HITKEEP_S3_USE_SSL` | `true` | Uses HTTPS for bucket writes. |
 | `HITKEEP_SPAM_FILTER_PATH` | `/var/lib/hitkeep/data/spam-filter.json` | Keeps the spam-filter cache on the persistent volume. |
@@ -66,7 +66,7 @@ The published `hitkeep` service currently has 19 pre-configured variables in the
 
 - Keep the service at one replica unless you have validated HitKeep clustering and shared storage for your use case.
 - HitKeep keeps active DuckDB files on the volume. Automatic HitKeep backups and retention archives go to the Railway Bucket as Parquet snapshots, so they survive volume-level data loss better than same-volume local backups.
-- Railway Bucket `ENDPOINT` is an endpoint URL from the bucket credentials, such as `https://storage.railway.app` or `https://t3.storageapi.dev`, while DuckDB's S3 `ENDPOINT` setting expects the host without `https://`. Keep `HITKEEP_S3_ENDPOINT` synced to that host-only endpoint value.
+- Railway Bucket `ENDPOINT` is an endpoint URL from the bucket credentials, such as `https://storage.railway.app` or `https://t3.storageapi.dev`, while DuckDB's S3 `ENDPOINT` setting expects the host without `https://`. Keep `HITKEEP_S3_ENDPOINT` synced to that host-only endpoint value. Do not set it to `${{hitkeep-backups.ENDPOINT}}`; Railway resolves that reference to the full URL and DuckDB will build an invalid virtual-hosted S3 URL.
 - `HITKEEP_BACKUP_RETENTION` only prunes local filesystem backups in HitKeep 2.7.0. Railway Buckets currently do not provide bucket lifecycle configuration, so production deployments should add a separate cleanup job if backup growth matters.
 - SMTP features such as invites, password reset, and email reports require outbound SMTP. Railway currently only enables raw SMTP on Pro and above; Free/Trial/Hobby should treat email features as unavailable unless HitKeep adds an HTTPS mail driver.
 - If you use a custom domain, update `HITKEEP_PUBLIC_URL` to the final HTTPS origin.
@@ -90,7 +90,7 @@ This repository includes a helper script that applies the same Railway service s
 ./scripts/create-template-source-project.sh
 ```
 
-The script does not set a bucket region by default. Railway will use the current account or workspace default region for the bucket. To force a one-off bucket region while recreating the source project, run for example `BUCKET_REGION=sin ./scripts/create-template-source-project.sh`.
+The script defaults the bucket region to `sjc` because current Railway CLI bucket creation requires `--region` in non-interactive runs. To use another Railway Bucket region while recreating the source project, run for example `BUCKET_REGION=sin ./scripts/create-template-source-project.sh`. Supported CLI region codes are `sjc`, `iad`, `ams`, and `sin`.
 
 The script mirrors the 19 pre-configured variables from the published template. It uses Railway reference variables for the public domain, bucket name, bucket credentials, and bucket region. `HITKEEP_S3_ENDPOINT` remains a host-only value because the Railway Bucket `ENDPOINT` credential includes `https://`, while DuckDB expects the endpoint host separately from `HITKEEP_S3_USE_SSL`.
 

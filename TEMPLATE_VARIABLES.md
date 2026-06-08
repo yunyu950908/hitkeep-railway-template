@@ -19,7 +19,7 @@ This list matches the 19 pre-configured variables currently shown in the publish
 | `HITKEEP_S3_ACCESS_KEY_ID` | `${{hitkeep-backups.ACCESS_KEY_ID}}` | Railway Bucket access key id for static S3-compatible authentication. |
 | `HITKEEP_S3_SECRET_ACCESS_KEY` | `${{hitkeep-backups.SECRET_ACCESS_KEY}}` | Railway Bucket secret access key for static S3-compatible authentication. |
 | `HITKEEP_S3_REGION` | `${{hitkeep-backups.REGION}}` | Railway Bucket region used when signing S3 requests. |
-| `HITKEEP_S3_ENDPOINT` | `t3.storageapi.dev` | Host-only Railway Bucket S3 endpoint for DuckDB. Do not include `https://`; match the host from the bucket `ENDPOINT` credential if Railway shows a different endpoint. |
+| `HITKEEP_S3_ENDPOINT` | `t3.storageapi.dev` | Host-only Railway Bucket S3 endpoint for DuckDB. Do not include `https://`; do not use `${{hitkeep-backups.ENDPOINT}}` directly because that reference resolves to the full endpoint URL. Match the host from the bucket `ENDPOINT` credential if Railway shows a different endpoint. |
 | `HITKEEP_S3_URL_STYLE` | `vhost` | Uses virtual-hosted-style S3 URLs for Railway Buckets. |
 | `HITKEEP_S3_USE_SSL` | `true` | Enables HTTPS for S3 backup and archive writes. |
 | `HITKEEP_SPAM_FILTER_PATH` | `/var/lib/hitkeep/data/spam-filter.json` | Cache file for HitKeep's spam-filter data. |

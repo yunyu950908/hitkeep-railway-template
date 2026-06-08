@@ -12,6 +12,7 @@
   "templateBucketId": "7eb8c4e4-2866-4a7b-a65d-fb189c07884f",
   "serviceName": "hitkeep",
   "bucketName": "hitkeep-backups",
+  "bucketRegion": "sjc",
   "volumeMountPath": "/var/lib/hitkeep/data",
   "backupPath": "s3://${{hitkeep-backups.BUCKET}}/hitkeep/backups",
   "archivePath": "s3://${{hitkeep-backups.BUCKET}}/hitkeep/archive",

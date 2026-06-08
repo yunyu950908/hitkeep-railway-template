@@ -59,7 +59,7 @@ If you later attach a custom domain, update `HITKEEP_PUBLIC_URL` to the final HT
 - Keep the volume attached. Without it, analytics data will be ephemeral.
 - The template writes HitKeep automatic backups and retention archives to the Railway Bucket, not the local volume.
 - The template pre-configures HitKeep's HTTP listener, data paths, backup cadence, local backup retention, S3 settings, and spam-filter cache path so the first deploy does not require manual variable entry.
-- Railway Bucket credentials expose `ENDPOINT` as a URL. The template stores `HITKEEP_S3_ENDPOINT` as the host-only value because DuckDB expects the endpoint host separately from SSL settings.
+- Railway Bucket credentials expose `ENDPOINT` as a URL. The template stores `HITKEEP_S3_ENDPOINT` as the host-only value because DuckDB expects the endpoint host separately from SSL settings. Do not replace it with `${{hitkeep-backups.ENDPOINT}}`; that reference includes `https://`.
 - `HITKEEP_BACKUP_RETENTION` only prunes local filesystem backups in HitKeep 2.7.0. Railway Buckets currently do not provide bucket lifecycle configuration, so add a cleanup job if you need bounded object storage growth.
 - SMTP-dependent features require Railway Pro or above because Railway disables outbound SMTP on Free, Trial, and Hobby plans.
 
