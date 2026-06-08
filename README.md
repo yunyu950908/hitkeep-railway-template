@@ -43,7 +43,7 @@ The template provisions one Railway service from the official Docker image, one 
 | `HITKEEP_S3_ACCESS_KEY_ID` | `${{hitkeep-backups.ACCESS_KEY_ID}}` | Lets DuckDB write backup/archive Parquet files to the Railway Bucket. |
 | `HITKEEP_S3_SECRET_ACCESS_KEY` | `${{hitkeep-backups.SECRET_ACCESS_KEY}}` | Secret key for the Railway Bucket S3 API. |
 | `HITKEEP_S3_REGION` | `${{hitkeep-backups.REGION}}` | Region used when signing S3 requests. |
-| `HITKEEP_S3_ENDPOINT` | `${{hitkeep-backups.ENDPOINT}}` | Endpoint URL for the Railway Bucket S3 API. |
+| `HITKEEP_S3_ENDPOINT` | `t3.storageapi.dev` | Host-only form of the Railway Bucket endpoint for DuckDB. |
 | `HITKEEP_S3_URL_STYLE` | `vhost` | Matches current Railway Bucket virtual-hosted-style URLs. |
 | `HITKEEP_S3_USE_SSL` | `true` | Uses HTTPS for bucket writes. |
 
@@ -62,6 +62,7 @@ The template provisions one Railway service from the official Docker image, one 
 
 - Keep the service at one replica unless you have validated HitKeep clustering and shared storage for your use case.
 - HitKeep keeps active DuckDB files on the volume. Automatic HitKeep backups and retention archives go to the Railway Bucket as Parquet snapshots, so they survive volume-level data loss better than same-volume local backups.
+- Railway Bucket `ENDPOINT` is an endpoint URL such as `https://t3.storageapi.dev`, while DuckDB's S3 `ENDPOINT` setting expects the host without `https://`. Set `HITKEEP_S3_ENDPOINT` to the host-only endpoint value.
 - `HITKEEP_BACKUP_RETENTION` only prunes local filesystem backups in HitKeep 2.7.0. Railway Buckets currently do not provide bucket lifecycle configuration, so production deployments should add a separate cleanup job if backup growth matters.
 - SMTP features such as invites, password reset, and email reports require outbound SMTP. Railway currently only enables raw SMTP on Pro and above; Free/Trial/Hobby should treat email features as unavailable unless HitKeep adds an HTTPS mail driver.
 - If you use a custom domain, update `HITKEEP_PUBLIC_URL` to the final HTTPS origin.

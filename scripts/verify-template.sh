@@ -28,15 +28,19 @@ require_line .env.example 'HITKEEP_BACKUP_PATH=s3://${{hitkeep-backups.BUCKET}}/
 require_line .env.example 'HITKEEP_S3_ACCESS_KEY_ID=${{hitkeep-backups.ACCESS_KEY_ID}}'
 require_line .env.example 'HITKEEP_S3_SECRET_ACCESS_KEY=${{hitkeep-backups.SECRET_ACCESS_KEY}}'
 require_line .env.example 'HITKEEP_S3_REGION=${{hitkeep-backups.REGION}}'
-require_line .env.example 'HITKEEP_S3_ENDPOINT=${{hitkeep-backups.ENDPOINT}}'
+require_line .env.example 'HITKEEP_S3_ENDPOINT=t3.storageapi.dev'
 require_line .env.example 'HITKEEP_S3_URL_STYLE=vhost'
 require_line .env.example 'HITKEEP_S3_USE_SSL=true'
 
 require_line scripts/create-template-source-project.sh 'BUCKET_NAME="${BUCKET_NAME:-hitkeep-backups}"'
 require_line scripts/create-template-source-project.sh 'BUCKET_REGION="${BUCKET_REGION:-iad}"'
-require_line scripts/create-template-source-project.sh '--variables "HITKEEP_S3_ENDPOINT=$(bucket_ref ENDPOINT)" \'
+require_line scripts/create-template-source-project.sh 'HITKEEP_S3_ENDPOINT="${HITKEEP_S3_ENDPOINT:-t3.storageapi.dev}"'
+require_line scripts/create-template-source-project.sh '--variables "HITKEEP_S3_ENDPOINT=$HITKEEP_S3_ENDPOINT" \'
+require_line scripts/create-template-source-project.sh 'volume_json="$(railway_cmd volume --project "$project_id" --environment "$environment_id" --service "$service_id" add --mount-path /var/lib/hitkeep/data --json)"'
 rg --quiet 'railway_cmd bucket create "\$BUCKET_NAME" --region "\$BUCKET_REGION" --json' scripts/create-template-source-project.sh \
-  || fail "template source project script must create a Railway bucket"
+  && fail "template source project script must create the Railway bucket with an explicit environment"
+rg --quiet 'railway_cmd bucket create "\$BUCKET_NAME" --region "\$BUCKET_REGION" --environment "\$environment_id" --json' scripts/create-template-source-project.sh \
+  || fail "template source project script must create the Railway bucket with an explicit environment"
 
 if rg --quiet 'HITKEEP_(BACKUP|ARCHIVE)_PATH=/var/lib/hitkeep/data/(backups|archive)' \
   .env.example scripts/create-template-source-project.sh; then
