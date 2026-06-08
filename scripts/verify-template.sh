@@ -33,13 +33,18 @@ require_line .env.example 'HITKEEP_S3_URL_STYLE=vhost'
 require_line .env.example 'HITKEEP_S3_USE_SSL=true'
 
 require_line scripts/create-template-source-project.sh 'BUCKET_NAME="${BUCKET_NAME:-hitkeep-backups}"'
-require_line scripts/create-template-source-project.sh 'BUCKET_REGION="${BUCKET_REGION:-sin}"'
+require_line scripts/create-template-source-project.sh 'BUCKET_REGION="${BUCKET_REGION:-}"'
 require_line scripts/create-template-source-project.sh 'HITKEEP_S3_ENDPOINT="${HITKEEP_S3_ENDPOINT:-t3.storageapi.dev}"'
 require_line scripts/create-template-source-project.sh '--variables "HITKEEP_S3_ENDPOINT=$HITKEEP_S3_ENDPOINT" \'
 require_line scripts/create-template-source-project.sh 'volume_json="$(railway_cmd volume --project "$project_id" --environment "$environment_id" --service "$service_id" add --mount-path /var/lib/hitkeep/data --json)"'
-rg --quiet 'railway_cmd bucket create "\$BUCKET_NAME" --region "\$BUCKET_REGION" --json' scripts/create-template-source-project.sh \
-  && fail "template source project script must create the Railway bucket with an explicit environment"
-rg --quiet 'railway_cmd bucket create "\$BUCKET_NAME" --region "\$BUCKET_REGION" --environment "\$environment_id" --json' scripts/create-template-source-project.sh \
+require_line scripts/create-template-source-project.sh 'bucket_create_args=(bucket create "$BUCKET_NAME" --environment "$environment_id" --json)'
+require_line scripts/create-template-source-project.sh 'bucket_create_args+=(--region "$BUCKET_REGION")'
+require_line scripts/create-template-source-project.sh 'bucket_json="$(railway_cmd "${bucket_create_args[@]}")"'
+rg --quiet 'BUCKET_REGION="\$\{BUCKET_REGION:-[a-z]' scripts/create-template-source-project.sh \
+  && fail "template source project script must not hard-code a bucket region by default"
+rg --quiet 'railway_cmd bucket create' scripts/create-template-source-project.sh \
+  && fail "template source project script must build bucket create args so region remains optional"
+rg --quiet 'bucket create "\$BUCKET_NAME" --environment "\$environment_id" --json' scripts/create-template-source-project.sh \
   || fail "template source project script must create the Railway bucket with an explicit environment"
 
 for template_variable in \

@@ -4,7 +4,7 @@ set -euo pipefail
 PROJECT_NAME="${PROJECT_NAME:-hitkeep-railway-template}"
 SERVICE_NAME="${SERVICE_NAME:-hitkeep}"
 BUCKET_NAME="${BUCKET_NAME:-hitkeep-backups}"
-BUCKET_REGION="${BUCKET_REGION:-sin}"
+BUCKET_REGION="${BUCKET_REGION:-}"
 IMAGE="${IMAGE:-pascalebeier/hitkeep:2.7.0}"
 WORKSPACE="${RAILWAY_WORKSPACE:-}"
 HITKEEP_S3_ENDPOINT="${HITKEEP_S3_ENDPOINT:-t3.storageapi.dev}"
@@ -53,7 +53,12 @@ if [[ -z "$environment_id" ]]; then
   exit 1
 fi
 
-bucket_json="$(railway_cmd bucket create "$BUCKET_NAME" --region "$BUCKET_REGION" --environment "$environment_id" --json)"
+bucket_create_args=(bucket create "$BUCKET_NAME" --environment "$environment_id" --json)
+if [[ -n "$BUCKET_REGION" ]]; then
+  bucket_create_args+=(--region "$BUCKET_REGION")
+fi
+
+bucket_json="$(railway_cmd "${bucket_create_args[@]}")"
 bucket_id="$(printf '%s' "$bucket_json" | jq -r '.id // .bucketId // .bucket.id // empty')"
 if [[ -z "$bucket_id" ]]; then
   echo "Could not parse bucket id from railway bucket create output:" >&2

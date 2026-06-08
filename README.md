@@ -86,6 +86,8 @@ This repository includes a helper script that applies the same Railway service s
 ./scripts/create-template-source-project.sh
 ```
 
+The script does not set a bucket region by default. Railway will use the current account or workspace default region for the bucket. To force a one-off bucket region while recreating the source project, run for example `BUCKET_REGION=sin ./scripts/create-template-source-project.sh`.
+
 The published template itself is generated from the Railway project with:
 
 ```bash
