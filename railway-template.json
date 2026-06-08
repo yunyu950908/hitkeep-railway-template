@@ -6,5 +6,10 @@
   "sourceEnvironmentId": "80c9fd61-b05f-41c0-9385-0ac4429dea5d",
   "sourceServiceId": "c2e7e63e-fffb-42c1-b4bd-6c56fad74060",
   "sourceVolumeId": "17036b75-cc70-47f3-9fc0-2e9923313cb1",
+  "sourceBucketId": "f444176c-f47a-42c0-861e-332af1b5fd90",
+  "sourceBucketName": "hitkeep-backups",
+  "sourceBucketRegion": "iad",
+  "backupPath": "s3://${{hitkeep-backups.BUCKET}}/hitkeep/backups",
+  "archivePath": "s3://${{hitkeep-backups.BUCKET}}/hitkeep/archive",
   "image": "pascalebeier/hitkeep:2.7.0"
 }

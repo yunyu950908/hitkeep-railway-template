@@ -3,8 +3,11 @@ set -euo pipefail
 
 PROJECT_NAME="${PROJECT_NAME:-hitkeep-railway-template}"
 SERVICE_NAME="${SERVICE_NAME:-hitkeep}"
+BUCKET_NAME="${BUCKET_NAME:-hitkeep-backups}"
+BUCKET_REGION="${BUCKET_REGION:-iad}"
 IMAGE="${IMAGE:-pascalebeier/hitkeep:2.7.0}"
 WORKSPACE="${RAILWAY_WORKSPACE:-}"
+HITKEEP_S3_ENDPOINT="${HITKEEP_S3_ENDPOINT:-storage.railway.app}"
 
 caller_env=(
   "RAILWAY_CALLER=${RAILWAY_CALLER:-hitkeep-railway-template-script}"
@@ -20,6 +23,15 @@ if ! command -v railway >/dev/null 2>&1; then
   exit 1
 fi
 
+if ! command -v jq >/dev/null 2>&1; then
+  echo "jq is required" >&2
+  exit 1
+fi
+
+bucket_ref() {
+  printf '${{%s.%s}}' "$BUCKET_NAME" "$1"
+}
+
 init_args=(init --name "$PROJECT_NAME" --json)
 if [[ -n "$WORKSPACE" ]]; then
   init_args+=(--workspace "$WORKSPACE")
@@ -33,6 +45,14 @@ if [[ -z "$project_id" ]]; then
   exit 1
 fi
 
+bucket_json="$(railway_cmd bucket create "$BUCKET_NAME" --region "$BUCKET_REGION" --json)"
+bucket_id="$(printf '%s' "$bucket_json" | jq -r '.id // .bucketId // .bucket.id // empty')"
+if [[ -z "$bucket_id" ]]; then
+  echo "Could not parse bucket id from railway bucket create output:" >&2
+  printf '%s\n' "$bucket_json" >&2
+  exit 1
+fi
+
 service_json="$(railway_cmd add --image "$IMAGE" --service "$SERVICE_NAME" --json \
   --variables "PORT=8080" \
   --variables "HITKEEP_HTTP_ADDR=:8080" \
@@ -40,10 +60,16 @@ service_json="$(railway_cmd add --image "$IMAGE" --service "$SERVICE_NAME" --jso
   --variables 'HITKEEP_JWT_SECRET=${{secret(64, "abcdef0123456789")}}' \
   --variables "HITKEEP_DB_PATH=/var/lib/hitkeep/data/hitkeep.db" \
   --variables "HITKEEP_DATA_PATH=/var/lib/hitkeep/data" \
-  --variables "HITKEEP_ARCHIVE_PATH=/var/lib/hitkeep/data/archive" \
-  --variables "HITKEEP_BACKUP_PATH=/var/lib/hitkeep/data/backups" \
+  --variables "HITKEEP_ARCHIVE_PATH=s3://$(bucket_ref BUCKET)/hitkeep/archive" \
+  --variables "HITKEEP_BACKUP_PATH=s3://$(bucket_ref BUCKET)/hitkeep/backups" \
   --variables "HITKEEP_BACKUP_INTERVAL=60" \
   --variables "HITKEEP_BACKUP_RETENTION=24" \
+  --variables "HITKEEP_S3_ACCESS_KEY_ID=$(bucket_ref ACCESS_KEY_ID)" \
+  --variables "HITKEEP_S3_SECRET_ACCESS_KEY=$(bucket_ref SECRET_ACCESS_KEY)" \
+  --variables "HITKEEP_S3_REGION=$(bucket_ref REGION)" \
+  --variables "HITKEEP_S3_ENDPOINT=$HITKEEP_S3_ENDPOINT" \
+  --variables "HITKEEP_S3_URL_STYLE=vhost" \
+  --variables "HITKEEP_S3_USE_SSL=true" \
   --variables "HITKEEP_SPAM_FILTER_AUTO_UPDATE=true" \
   --variables "HITKEEP_SPAM_FILTER_PATH=/var/lib/hitkeep/data/spam-filter.json" \
   --variables "RAILWAY_RUN_UID=0")"
@@ -63,6 +89,7 @@ Created Railway template source project.
 
 Project ID: $project_id
 Service ID: $service_id
+Bucket ID: $bucket_id
 
 Next:
   railway templates create --project $project_id --environment production --json
