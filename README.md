@@ -10,7 +10,7 @@ Deploy the published template:
 [![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/hitkeep-railway-template)
 <!-- DEPLOY_BUTTON_END -->
 
-The template provisions one Railway service from the official Docker image and attaches one persistent volume for HitKeep data.
+The template provisions one Railway service from the official Docker image, one persistent volume for active DuckDB data, and one Railway Bucket for backup/archive snapshots.
 
 ## What It Creates
 
@@ -21,7 +21,9 @@ The template provisions one Railway service from the official Docker image and a
 | Public port | `8080` |
 | Health endpoint | `/healthz` |
 | Volume mount | `/var/lib/hitkeep/data` |
-| Data store | DuckDB files under the mounted volume |
+| Bucket | `hitkeep-backups` |
+| Data store | Active DuckDB files under the mounted volume |
+| Backup/archive store | Parquet snapshots under the Railway Bucket |
 
 ## Important Variables
 
@@ -34,8 +36,16 @@ The template provisions one Railway service from the official Docker image and a
 | `RAILWAY_RUN_UID` | `0` | Railway volumes are mounted as root; the official image is non-root by default. |
 | `HITKEEP_DB_PATH` | `/var/lib/hitkeep/data/hitkeep.db` | Stores the control/default database on the persistent volume. |
 | `HITKEEP_DATA_PATH` | `/var/lib/hitkeep/data` | Stores tenant-local DuckDB files on the persistent volume. |
-| `HITKEEP_ARCHIVE_PATH` | `/var/lib/hitkeep/data/archive` | Keeps retention archives on the persistent volume. |
-| `HITKEEP_BACKUP_PATH` | `/var/lib/hitkeep/data/backups` | Enables local HitKeep backup snapshots. |
+| `HITKEEP_ARCHIVE_PATH` | `s3://${{hitkeep-backups.BUCKET}}/hitkeep/archive` | Stores retention archives in Railway Bucket object storage. |
+| `HITKEEP_BACKUP_PATH` | `s3://${{hitkeep-backups.BUCKET}}/hitkeep/backups` | Stores automatic HitKeep backup snapshots in Railway Bucket object storage. |
+| `HITKEEP_BACKUP_INTERVAL` | `60` | Runs the HitKeep backup worker every 60 minutes. |
+| `HITKEEP_BACKUP_RETENTION` | `24` | Prunes local backups only; S3/bucket backups need an external cleanup policy or job. |
+| `HITKEEP_S3_ACCESS_KEY_ID` | `${{hitkeep-backups.ACCESS_KEY_ID}}` | Lets DuckDB write backup/archive Parquet files to the Railway Bucket. |
+| `HITKEEP_S3_SECRET_ACCESS_KEY` | `${{hitkeep-backups.SECRET_ACCESS_KEY}}` | Secret key for the Railway Bucket S3 API. |
+| `HITKEEP_S3_REGION` | `${{hitkeep-backups.REGION}}` | Region used when signing S3 requests. |
+| `HITKEEP_S3_ENDPOINT` | `storage.railway.app` | DuckDB S3 endpoint host for Railway Buckets. |
+| `HITKEEP_S3_URL_STYLE` | `vhost` | Matches current Railway Bucket virtual-hosted-style URLs. |
+| `HITKEEP_S3_USE_SSL` | `true` | Uses HTTPS for bucket writes. |
 
 ## After Deploying
 
@@ -51,9 +61,20 @@ The template provisions one Railway service from the official Docker image and a
 ## Production Notes
 
 - Keep the service at one replica unless you have validated HitKeep clustering and shared storage for your use case.
-- Enable Railway volume backups or configure external S3/R2 backups. Local HitKeep backups on the same volume are useful for recovery workflows but are not off-platform disaster recovery.
+- HitKeep keeps active DuckDB files on the volume. Automatic HitKeep backups and retention archives go to the Railway Bucket as Parquet snapshots, so they survive volume-level data loss better than same-volume local backups.
+- `HITKEEP_BACKUP_RETENTION` only prunes local filesystem backups in HitKeep 2.7.0. Railway Buckets currently do not provide bucket lifecycle configuration, so production deployments should add a separate cleanup job if backup growth matters.
 - SMTP features such as invites, password reset, and email reports require outbound SMTP. Railway currently only enables raw SMTP on Pro and above; Free/Trial/Hobby should treat email features as unavailable unless HitKeep adds an HTTPS mail driver.
 - If you use a custom domain, update `HITKEEP_PUBLIC_URL` to the final HTTPS origin.
+
+## Validation
+
+Run the repository-level template validation before publishing template changes:
+
+```bash
+./scripts/verify-template.sh
+```
+
+This checks JSON syntax, shell syntax, required bucket-backed environment variables, source-project bucket creation, and documentation for the S3 retention caveat.
 
 ## Recreate The Template Source Project
 
@@ -73,6 +94,8 @@ railway templates publish <template-id> \
   --readme-file TEMPLATE_README.md \
   --json
 ```
+
+When updating the already-published Docker-image template, `railway templates create` generates a new unpublished draft from the source project. Review that draft in the Railway template editor before publishing so the public deploy code remains the intended `hitkeep-railway-template` URL. The CLI `templates publish/update` command updates marketplace metadata and README content, but does not expose a flag to rewrite an existing template's deploy code or replace its resource snapshot in place.
 
 ## License
 
