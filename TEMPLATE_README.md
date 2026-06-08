@@ -8,7 +8,7 @@ This template uses the official `pascalebeier/hitkeep:2.7.0` Docker image, expos
 
 HitKeep is a single-binary web analytics app with embedded DuckDB and embedded NSQ. It tracks pageviews, events, goals, funnels, ecommerce activity, AI crawler visibility, Search Console aggregates, exports, and read-only API/MCP access without requiring PostgreSQL, Redis, ClickHouse, Kafka, or a separate queue.
 
-On Railway, the app runs as one persistent service backed by one attached volume and one private S3-compatible Railway Bucket. The template generates a unique `HITKEEP_JWT_SECRET` during deployment and configures HitKeep to use the generated Railway public domain.
+On Railway, the app runs as one persistent service backed by one attached volume and one private S3-compatible Railway Bucket. The template uses Railway reference variables for the public domain, bucket name, bucket credentials, and bucket region. It also generates a unique `HITKEEP_JWT_SECRET` during deployment.
 
 ## Why Deploy HitKeep on Railway
 
@@ -58,6 +58,8 @@ If you later attach a custom domain, update `HITKEEP_PUBLIC_URL` to the final HT
 - Run one replica by default. HitKeep uses embedded DuckDB and NSQ, so a single-service deployment is the intended low-ops path.
 - Keep the volume attached. Without it, analytics data will be ephemeral.
 - The template writes HitKeep automatic backups and retention archives to the Railway Bucket, not the local volume.
+- The template pre-configures HitKeep's HTTP listener, data paths, backup cadence, local backup retention, S3 settings, and spam-filter cache path so the first deploy does not require manual variable entry.
+- Railway Bucket credentials expose `ENDPOINT` as a URL. The template stores `HITKEEP_S3_ENDPOINT` as the host-only value because DuckDB expects the endpoint host separately from SSL settings.
 - `HITKEEP_BACKUP_RETENTION` only prunes local filesystem backups in HitKeep 2.7.0. Railway Buckets currently do not provide bucket lifecycle configuration, so add a cleanup job if you need bounded object storage growth.
 - SMTP-dependent features require Railway Pro or above because Railway disables outbound SMTP on Free, Trial, and Hobby plans.
 

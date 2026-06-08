@@ -7,7 +7,7 @@ One-click Railway template for [HitKeep](https://hitkeep.com), an open-source pr
 Deploy the published template:
 
 <!-- DEPLOY_BUTTON_START -->
-[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/hitkeep-railway-template)
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/hitkeep-bucket-template)
 <!-- DEPLOY_BUTTON_END -->
 
 The template provisions one Railway service from the official Docker image, one persistent volume for active DuckDB data, and one Railway Bucket for backup/archive snapshots.
@@ -25,7 +25,9 @@ The template provisions one Railway service from the official Docker image, one 
 | Data store | Active DuckDB files under the mounted volume |
 | Backup/archive store | Parquet snapshots under the Railway Bucket |
 
-## Important Variables
+## Pre-Configured Variables
+
+The published `hitkeep` service currently has 19 pre-configured variables in the Railway template editor:
 
 | Variable | Template value | Why |
 | --- | --- | --- |
@@ -43,9 +45,11 @@ The template provisions one Railway service from the official Docker image, one 
 | `HITKEEP_S3_ACCESS_KEY_ID` | `${{hitkeep-backups.ACCESS_KEY_ID}}` | Lets DuckDB write backup/archive Parquet files to the Railway Bucket. |
 | `HITKEEP_S3_SECRET_ACCESS_KEY` | `${{hitkeep-backups.SECRET_ACCESS_KEY}}` | Secret key for the Railway Bucket S3 API. |
 | `HITKEEP_S3_REGION` | `${{hitkeep-backups.REGION}}` | Region used when signing S3 requests. |
-| `HITKEEP_S3_ENDPOINT` | `t3.storageapi.dev` | Host-only form of the Railway Bucket endpoint for DuckDB. |
+| `HITKEEP_S3_ENDPOINT` | `t3.storageapi.dev` | Host-only form of the Railway Bucket endpoint for DuckDB. Match the host from the bucket `ENDPOINT` credential if Railway shows a different endpoint. |
 | `HITKEEP_S3_URL_STYLE` | `vhost` | Matches current Railway Bucket virtual-hosted-style URLs. |
 | `HITKEEP_S3_USE_SSL` | `true` | Uses HTTPS for bucket writes. |
+| `HITKEEP_SPAM_FILTER_PATH` | `/var/lib/hitkeep/data/spam-filter.json` | Keeps the spam-filter cache on the persistent volume. |
+| `HITKEEP_SPAM_FILTER_AUTO_UPDATE` | `true` | Lets HitKeep refresh the OSS spam-filter feed automatically. |
 
 ## After Deploying
 
@@ -62,7 +66,7 @@ The template provisions one Railway service from the official Docker image, one 
 
 - Keep the service at one replica unless you have validated HitKeep clustering and shared storage for your use case.
 - HitKeep keeps active DuckDB files on the volume. Automatic HitKeep backups and retention archives go to the Railway Bucket as Parquet snapshots, so they survive volume-level data loss better than same-volume local backups.
-- Railway Bucket `ENDPOINT` is an endpoint URL such as `https://t3.storageapi.dev`, while DuckDB's S3 `ENDPOINT` setting expects the host without `https://`. Set `HITKEEP_S3_ENDPOINT` to the host-only endpoint value.
+- Railway Bucket `ENDPOINT` is an endpoint URL from the bucket credentials, such as `https://storage.railway.app` or `https://t3.storageapi.dev`, while DuckDB's S3 `ENDPOINT` setting expects the host without `https://`. Keep `HITKEEP_S3_ENDPOINT` synced to that host-only endpoint value.
 - `HITKEEP_BACKUP_RETENTION` only prunes local filesystem backups in HitKeep 2.7.0. Railway Buckets currently do not provide bucket lifecycle configuration, so production deployments should add a separate cleanup job if backup growth matters.
 - SMTP features such as invites, password reset, and email reports require outbound SMTP. Railway currently only enables raw SMTP on Pro and above; Free/Trial/Hobby should treat email features as unavailable unless HitKeep adds an HTTPS mail driver.
 - If you use a custom domain, update `HITKEEP_PUBLIC_URL` to the final HTTPS origin.
@@ -88,18 +92,20 @@ This repository includes a helper script that applies the same Railway service s
 
 The script does not set a bucket region by default. Railway will use the current account or workspace default region for the bucket. To force a one-off bucket region while recreating the source project, run for example `BUCKET_REGION=sin ./scripts/create-template-source-project.sh`.
 
+The script mirrors the 19 pre-configured variables from the published template. It uses Railway reference variables for the public domain, bucket name, bucket credentials, and bucket region. `HITKEEP_S3_ENDPOINT` remains a host-only value because the Railway Bucket `ENDPOINT` credential includes `https://`, while DuckDB expects the endpoint host separately from `HITKEEP_S3_USE_SSL`.
+
 The published template itself is generated from the Railway project with:
 
 ```bash
 railway templates create --project <project-id> --environment production --json
 railway templates publish <template-id> \
   --category Analytics \
-  --description "Self-hosted HitKeep analytics with DuckDB storage." \
+  --description "Self-hosted HitKeep analytics with Railway Bucket backups." \
   --readme-file TEMPLATE_README.md \
   --json
 ```
 
-When updating the already-published Docker-image template, `railway templates create` generates a new unpublished draft from the source project. Review that draft in the Railway template editor before publishing so the public deploy code remains the intended `hitkeep-railway-template` URL. The CLI `templates publish/update` command updates marketplace metadata and README content, but does not expose a flag to rewrite an existing template's deploy code or replace its resource snapshot in place.
+When updating the already-published Docker-image template, `railway templates create` generates a new unpublished draft from the source project. Review that draft in the Railway template editor before publishing so the public deploy code remains the intended `hitkeep-bucket-template` URL. The CLI `templates publish/update` command updates marketplace metadata and README content, but does not expose a flag to rewrite an existing template's deploy code or replace its resource snapshot in place.
 
 ## License
 

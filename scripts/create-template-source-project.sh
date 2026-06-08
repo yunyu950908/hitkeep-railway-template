@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-PROJECT_NAME="${PROJECT_NAME:-hitkeep-railway-template}"
+PROJECT_NAME="${PROJECT_NAME:-hitkeep-bucket-template}"
 SERVICE_NAME="${SERVICE_NAME:-hitkeep}"
 BUCKET_NAME="${BUCKET_NAME:-hitkeep-backups}"
 BUCKET_REGION="${BUCKET_REGION:-}"
@@ -10,7 +10,7 @@ WORKSPACE="${RAILWAY_WORKSPACE:-}"
 HITKEEP_S3_ENDPOINT="${HITKEEP_S3_ENDPOINT:-t3.storageapi.dev}"
 
 caller_env=(
-  "RAILWAY_CALLER=${RAILWAY_CALLER:-hitkeep-railway-template-script}"
+  "RAILWAY_CALLER=${RAILWAY_CALLER:-hitkeep-bucket-template-script}"
   "RAILWAY_AGENT_SESSION=${RAILWAY_AGENT_SESSION:-hitkeep-template-script-$$}"
 )
 
